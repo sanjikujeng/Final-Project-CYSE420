@@ -5,9 +5,7 @@ def load_data(filename):
     
     data = []
     for line in lines:
-        # Split by commas and strip newline characters
         row = line.strip().split(',')
-        # Convert all attributes to float except the last one (label)
         row = [float(i) if i != '?' else 0.0 for i in row[:-1]] + [row[-1]]  # Convert label to string
         data.append(row)
     return data
@@ -17,7 +15,6 @@ def train_test_split(data, train_size=0.8):
     train_len = int(len(data) * train_size)
     train_data = data[:train_len]
     test_data = data[train_len:]
-    
     return train_data, test_data
 
 # Naive Bayes classifier (Gaussian Naive Bayes from scratch)
@@ -68,7 +65,7 @@ def decision_tree_classifier(train_X, train_y, test_X):
         entropy_value = 0
         for count in class_counts.values():
             prob = count / len(y)
-            entropy_value -= prob * math.log2(prob)
+            entropy_value -= prob * log2(prob)
         return entropy_value
 
     def best_split(X, y):
@@ -89,7 +86,6 @@ def decision_tree_classifier(train_X, train_y, test_X):
                     best_feature = feature_index
         return best_split, best_feature
 
-    # Build a simple decision tree (one split)
     split_value, feature_index = best_split(train_X, train_y)
 
     predictions = []
@@ -101,50 +97,118 @@ def decision_tree_classifier(train_X, train_y, test_X):
 
     return predictions
 
-# Evaluate predictions (accuracy and F1-score)
-def evaluate_predictions(predictions, true_labels):
-    correct = sum([1 for p, t in zip(predictions, true_labels) if p == t])
-    accuracy = correct / len(true_labels) * 100
+# Random Forest Classifier (using multiple decision trees)
+def random_forest(train_X, train_y, test_X, num_trees=5):
+    def bootstrap_sample(X, y):
+        sample_X, sample_y = [], []
+        for _ in range(len(X)):
+            index = int(random_float(0, len(X) - 1))
+            sample_X.append(X[index])
+            sample_y.append(y[index])
+        return sample_X, sample_y
+    
+    def train_tree(X, y):
+        return decision_tree_classifier(X, y, X)  # Training a tree on bootstrapped data
+    
+    trees = []
+    for _ in range(num_trees):
+        sample_X, sample_y = bootstrap_sample(train_X, train_y)
+        tree = train_tree(sample_X, sample_y)
+        trees.append(tree)
 
-    # F1-score calculation (binary case)
-    tp = sum([1 for p, t in zip(predictions, true_labels) if p == 1 and t == 1])
-    fp = sum([1 for p, t in zip(predictions, true_labels) if p == 1 and t == 0])
-    fn = sum([1 for p, t in zip(predictions, true_labels) if p == 0 and t == 1])
-    precision = tp / (tp + fp) if (tp + fp) != 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) != 0 else 0
-    f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+    predictions = []
+    for row in test_X:
+        tree_predictions = [tree[0] for tree in trees]  # Collect predictions from each tree
+        predictions.append(max(set(tree_predictions), key=tree_predictions.count))
+    
+    return predictions
 
-    return accuracy, f1_score
+# Support Vector Machine (SVM) - Simplified Linear SVM
+def svm(train_X, train_y, test_X, learning_rate=0.1, epochs=1000):
+    def update_weights(w, b, x, y):
+        if y * (sum(w_i * x_i for w_i, x_i in zip(w, x)) + b) < 1:
+            w = [w_i + learning_rate * (y * x_i) for w_i, x_i in zip(w, x)]
+            b = b + learning_rate * y
+        return w, b
 
-# Main function to run everything
-if __name__ == '__main__':
-    # Load the KDD data
-    train_data = load_data('data/kddtrain+.data')
-    test_data = load_data('data/kddtest+.data')
+    # Initialize weights and bias
+    w = [0] * len(train_X[0])
+    b = 0
+    for _ in range(epochs):
+        for x, y in zip(train_X, train_y):
+            w, b = update_weights(w, b, x, y)
 
-    # Split into features and labels
-    train_X = [row[:-1] for row in train_data]
-    train_y = [row[-1] for row in train_data]
-    test_X = [row[:-1] for row in test_data]
-    test_y = [row[-1] for row in test_data]
+    # Make predictions
+    predictions = []
+    for x in test_X:
+        prediction = 1 if sum(w_i * x_i for w_i, x_i in zip(w, x)) + b >= 0 else -1
+        predictions.append(prediction)
+    
+    return predictions
 
-    # Train-test split for validation
-    # (Uncomment if you want to perform train-test splitting manually)
-    # train_data, test_data = train_test_split(data)
-    # train_X = [row[:-1] for row in train_data]
-    # train_y = [row[-1] for row in train_data]
-    # test_X = [row[:-1] for row in test_data]
-    # test_y = [row[-1] for row in test_data]
+# Neural Network (Simple Perceptron with one hidden layer)
+def neural_network(train_X, train_y, test_X, hidden_layer_size=5, epochs=1000, learning_rate=0.01):
+    def sigmoid(x):
+        return 1 / (1 + exp_neg(x))
 
-    # Test Simple Classifier (threshold-based)
-    simple_predictions = [1 if sum(features) > 8 else 0 for features in test_X]
-    simple_accuracy, simple_f1 = evaluate_predictions(simple_predictions, test_y)
-    print(f"Simple Classifier -> Accuracy: {simple_accuracy:.2f}%, F1-Score: {simple_f1:.2f}")
+    def sigmoid_derivative(x):
+        return x * (1 - x)
 
-    # Test Naive Bayes
-    nb_predictions = naive_bayes(train_X, train_y, test_X)
-    nb_accuracy, nb_f1 = evaluate_predictions(nb_predictions, test_y)
-    print(f"Naive Bayes -> Accuracy: {nb_accuracy:.2f}%, F1-Score: {nb_f1:.2f}")
+    # Initialize weights and biases
+    input_size = len(train_X[0])
+    output_size = 1
+    hidden_layer_weights = [[random_float(0, 1) for _ in range(input_size)] for _ in range(hidden_layer_size)]
+    output_layer_weights = [random_float(0, 1) for _ in range(hidden_layer_size)]
+    hidden_layer_biases = [random_float(0, 1) for _ in range(hidden_layer_size)]
+    output_layer_bias = random_float(0, 1)
+
+    # Train the model
+    for epoch in range(epochs):
+        for x, y in zip(train_X, train_y):
+            # Forward pass
+            hidden_layer_output = [sigmoid(sum(w * xi for w, xi in zip(weights, x)) + bias)
+                                   for weights, bias in zip(hidden_layer_weights, hidden_layer_biases)]
+            output_layer_input = sum(w * h for w, h in zip(output_layer_weights, hidden_layer_output)) + output_layer_bias
+            output_layer_output = sigmoid(output_layer_input)
+
+            # Backpropagation
+            error = y - output_layer_output
+            output_layer_delta = error * sigmoid_derivative(output_layer_output)
+            hidden_layer_deltas = [output_layer_delta * w * sigmoid_derivative(h)
+                                   for w, h in zip(output_layer_weights, hidden_layer_output)]
+
+            # Update weights and biases
+            output_layer_weights = [w + learning_rate * output_layer_delta * h for w, h in zip(output_layer_weights, hidden_layer_output)]
+            output_layer_bias += learning_rate * output_layer_delta
+
+            for i in range(hidden_layer_size):
+                hidden_layer_weights[i] = [w + learning_rate * hidden_layer_deltas[i] * xi for w, xi in zip(hidden_layer_weights[i], x)]
+                hidden_layer_biases[i] += learning_rate * hidden_layer_deltas[i]
+
+    # Make predictions
+    predictions = []
+    for x in test_X:
+        hidden_layer_output = [sigmoid(sum(w * xi for w, xi in zip(weights, x)) + bias)
+                               for weights, bias in zip(hidden_layer_weights, hidden_layer_biases)]
+        output_layer_input = sum(w * h for w, h in zip(output_layer_weights, hidden_layer_output)) + output_layer_bias
+        output_layer_output = sigmoid(output_layer_input)
+        predictions.append(1 if output_layer_output >= 0.5 else 0)
+    
+    return predictions
+
+# Helper functions for the randomization and math from scratch
+
+def random_float(low, high):
+    return low + (high - low) * pseudo_random()
+
+def pseudo_random():
+    state = 123456789
+    state = (state * 6364136223846793005 + 1) & 0xFFFFFFFFFFFFFFFF
+    return (state >> 16) / 2**32
+
+def exp_neg(x):
+    return 1 / (1 + 2.718 ** (-x))
+
 
     # Test Decision Tree Classifier
     dt_predictions = decision_tree_classifier(train_X, train_y, test_X)

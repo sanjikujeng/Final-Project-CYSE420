@@ -1,28 +1,12 @@
-# CYSE 420 ML/DL Assignment
+# Final-Project-CYSE420
 
-This project implements various machine learning and deep learning models for cybersecurity data classification using the NSL-KDD dataset.
+## Project Overview
+This project explores machine learning (ML) and deep learning (DL) approaches applied to a cybersecurity-related dataset. The objective is to build and compare predictive models, enhance accuracy using ensemble techniques, and conduct a thorough evaluation using key performance metrics.
 
-## Models Implemented
-- Logistic Regression
-- Support Vector Machine (SVM)
-- Decision Tree
-- Random Forest
-- Neural Network
-- Ensemble Methods (Bagging, Boosting, Stacking)
+## Objectives
+- Implement at least five ML/DL models.
+- Enhance predictive accuracy using ensemble learning methods (e.g., bagging, boosting, stacking).
+- Compare the performance of individual models with ensemble approaches.
+- Evaluate models using primary metrics (accuracy, F1-score) and additional metrics (precision, recall, AUC-ROC).
 
-## Requirements
-- Python 3.x
-- Libraries: pandas, numpy, scikit-learn, tensorflow, xgboost, matplotlib, seaborn
-
-## How to Run:
-1. Clone the repository.
-2. Install dependencies.
-3. Place the dataset (`KDDTrain+.csv`) in the `data/` folder.
-4. Run `main.py` to train and evaluate models.
-
-## Results
-- Performance metrics (accuracy, F1-score, AUC-ROC) for each model.
-- Model comparison and analysis.
-
-## License
-This project is licensed under the MIT License.
+ 
